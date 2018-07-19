@@ -1,0 +1,8 @@
+Log into virtual machine, Ubuntu.
+
+Check server status
+----> systemctl status mssql-server
+
+Log into server
+----> sqlcmd -S localhost -U SA -P <password>
+
