@@ -18,11 +18,11 @@ namespace BookItDependancies
         /// <param name="toPass"></param>
         /// <param name="SALT"></param>
         /// <returns></returns>
-        public string OneWayEncryptor(string toPass, byte[] SALT)
+        public static string OneWayEncryptor(string toPass, string salt)
         {
-            toPass += Encoding.Default.GetString(SALT);      //Adds SALT to string to be passed
+            toPass += salt;      //Adds SALT to string to be passed
 
-            byte[] data = new byte[toPass.Length + SALT.Length];
+            byte[] data = new byte[toPass.Length + salt.Length];
             for (int i = 0; i < data.Length; i++)
             {
                 data[i] = Convert.ToByte(toPass[i]);
@@ -36,7 +36,7 @@ namespace BookItDependancies
             return Convert.ToString(encryptResult); //Returns encrypted data
         }
 
-        public string SecretKeyEncryptor(string toPass, string encryptionPass = "T%%w54Pjf6$$d")
+        public static string SecretKeyEncryptor(string toPass, string encryptionPass = "T%%w54Pjf6$$d")
         {
             byte[] salt = GenerateNewSALT(8);
             string saltString = Encoding.Default.GetString(salt);
@@ -46,7 +46,7 @@ namespace BookItDependancies
             return SetEncryptString(encryption, saltString);
         }
 
-        public string SecretKeyDecryptor(string toPass, string encryptionPass = "T%%w54Pjf6$$d")
+        public static string SecretKeyDecryptor(string toPass, string encryptionPass = "T%%w54Pjf6$$d")
         {
             string saltString = GetEncryptString(toPass);
             string decryption = AESTwoWayEncryption.Decrypt<TripleDESCryptoServiceProvider>(GetStringToDecrypt(toPass), encryptionPass, saltString);
@@ -57,24 +57,24 @@ namespace BookItDependancies
         /// Generates a new SALT byte array
         /// </summary>
         /// <returns></returns>
-        public byte[] GenerateNewSALT(int len = 16)
+        public static byte[] GenerateNewSALT(int len = 16)
         {
             byte[] salt = new byte[len];
             using (var ran = new RNGCryptoServiceProvider()) { ran.GetNonZeroBytes(salt); }
             return salt;
         }
 
-        private string SetEncryptString(string encrypt, string salt)
+        private static string SetEncryptString(string encrypt, string salt)
         {
             string salt1 = salt.Substring(0, 4);
             string salt2 = salt.Substring(4, 4);
 
             return salt1 + encrypt + salt2;
         }
-        private string GetEncryptString(string encrypt) {
+        private static string GetEncryptString(string encrypt) {
             return encrypt.Substring(0, 4) + encrypt.Substring(encrypt.Length - 5, 4);
         }
-        private string GetStringToDecrypt(string decrypt) {
+        private static string GetStringToDecrypt(string decrypt) {
             string s = decrypt.Remove(0, 4);
             return s.Remove(s.Length - 5, 4);
         }

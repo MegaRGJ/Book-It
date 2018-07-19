@@ -13,6 +13,14 @@ V0.1.1 - Security Manager Added 19/07/2018
 + AES Two way encryption
 + Salt generator
 
+V0.2.0 - Server routines Added 19/07/2018
+
++ Updated row grab routine (Also ensures request has valid table name and columns)
++ Column name fetch routine
++ Table name fetch routine
++ Added login routine
++ Added ability for data input
+
 
 --------------------------------------------------
 --------------======= TODO ========---------------
@@ -20,18 +28,13 @@ Need to add permission system, or specific administrator accounts
 Need to edit current repository and replace with new library
 
 #Server Communications class
-Log in with (non-admin) permissions (i.e. add general users)
-Return column names from table
 Return number of entries in table
-Add new information to table
 Edit existing information in table
 Remove data from table
 General diagnostic information on database
 
 #Server class
 Log in function, asigns user to their account (Also later, create account)
-Get table information for all tables (Users[Done], Employees, Businesses, Bookings, MailBox, Invites)
---> Including get booking information (specific columns required here)
 Modify table information (only certain information needs to be edited)
 Delete information (Must be somehow user locked - admins/high permission accounts)
 
