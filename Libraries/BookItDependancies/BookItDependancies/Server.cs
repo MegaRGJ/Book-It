@@ -217,7 +217,7 @@ namespace BookItDependancies
                 else str += columns[n] + ", ";
 
             }
-            return str.Remove(str.Length - 1);            
+            return str.Remove(str.Length - 1);
         }
         #endregion
 
@@ -269,7 +269,30 @@ namespace BookItDependancies
                 return null;
 
             List<String> returnString = ServerCommunication.GetRowFromID(userID, "Users", details); //Gets required information from the database
-            return returnString;
+            return DecryptList(returnString);
+        }
+
+        /// <summary>
+        /// Add a new user to the Users table
+        /// </summary>
+        /// <param name="Name">Full name of user</param>
+        /// <param name="Address">Number and Street name</param>
+        /// <param name="Postcode">User's postcode</param>
+        /// <param name="Email">Email address</param>
+        /// <param name="Phone">Contact phone number</param>
+        /// <param name="Username">Username</param>
+        /// <param name="Password">Password</param>
+        /// <returns></returns>
+        public string AddUser(string Name, string Address, string Postcode, string Email, string Phone, string Username, string Password)
+        {
+            //First encrypt user's new password
+            string salt = SecurityManager.GenerateNewSALT();
+            string encPass = SecurityManager.OneWayEncryptor(Password, salt);
+            //Then compile into list string
+            List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, DateTime.Today.Date.ToString(), salt };
+            //Now Encrypt data in list
+            List<string> encryptedData = EncryptList(newData);
+            return ServerCommunication.NewTableEntry("Users", encryptedData);
         }
         #endregion        
         #region Internal routines
@@ -309,6 +332,26 @@ namespace BookItDependancies
                         return false;
             }
             return true;
+        }
+
+        private List<String> DecryptList(List<String> stringList)
+        {
+            List<String> Decrypted = new List<String>();
+            foreach (string s in stringList)
+            {
+                Decrypted.Add(SecurityManager.DecryptSK(s));
+            }
+            return Decrypted;
+        }
+
+        private List<String> EncryptList(List<String> stringList)
+        {
+            List<String> Encrypted = new List<String>();
+            foreach (string s in stringList)
+            {
+                Encrypted.Add(SecurityManager.EncryptSK(s));
+            }
+            return Encrypted;
         }
         #endregion
     }
