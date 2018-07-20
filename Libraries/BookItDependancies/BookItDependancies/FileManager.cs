@@ -8,7 +8,7 @@ namespace BookItDependancies
 {
     class FileManager
     {
-        //Needs versions for all platforms (Just Windows for not though)
+        //Needs versions for all platforms (Just Windows for now though)
 
     }
 }
