@@ -13,7 +13,7 @@ V0.1.1 - Security Manager Added 19/07/2018
 + AES Two way encryption
 + Salt generator
 
-V0.2.0 - Server routines Added 19/07/2018
+V0.2.0 - Server routines added 19/07/2018
 
 + Updated row grab routine (Also ensures request has valid table name and columns)
 + Column name fetch routine
@@ -21,12 +21,23 @@ V0.2.0 - Server routines Added 19/07/2018
 + Added login routine
 + Added ability for data input
 
-V0.2.1 - Server routines updated 20/07/2018
+V0.2.1 - Server routines added 20/07/2018
 + Add new user to database
-+ 
+
+V0.2.2 - Server routines added 24/07/2018
++ Remove row from database
++ Edit existing frows
 
 --------------------------------------------------
 --------------======= TODO ========---------------
+##Posible permission system edit##
+: Add a permission level for each user (General user = 1, Business account = 2, System tech = 3, Admin = 4)
+: Restrict access of specific tables/columns to permission levels
+: i.e. General user -> Can only see their own user details, bookings, mail and invite codes (and so on)
+: Would need to check each command for users permission level
+: Likely would have permission passcode (same for all users of a specific permission level
+: Handled in SecurityManager class
+
 Need to add permission system, or specific administrator accounts
 Need to edit current repository and replace with new library
 

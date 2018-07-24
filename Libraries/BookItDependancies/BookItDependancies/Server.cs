@@ -64,6 +64,37 @@ namespace BookItDependancies
         }
 
         /// <summary>
+        /// Sends an update query to overwrite data as specified
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="rowID"></param>
+        /// <param name="columnsChange"></param>
+        /// <param name="newData"></param>
+        /// <returns></returns>
+        private static string GeneralUpdateNonQuery(string tableName, string rowID, List<string> columnsChange, List<string> newData)
+        {
+            //First get SET String (Tells the database which columns to update, and with what data)
+            string setString = "";
+            if (columnsChange.Count() != newData.Count()) return "Failed to remove data, update data mismatch";
+            for (int n = 0; n < columnsChange.Count(); n++)
+            {
+                setString += columnsChange[n] + " = '" + newData[n] + "'";
+                if (n != columnsChange.Count() - 1)
+                    setString += ",";
+            }
+
+            string strCommand = "UPDATE " + tableName + "SET " + setString + " WHERE " + GetPrimaryKey(tableName) + " = " + rowID;
+            SqlCommand cmd = new SqlCommand(strCommand, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();
+                return "Row " + rowID + " in " + tableName + " has been deleted successfully.";
+            }
+            catch { return "Failed to remove data"; }
+        }
+               
+
+        /// <summary>
         /// Creates a new data entry in the provided table
         /// </summary>
         /// <param name="tableName">Name of table in database</param>
@@ -78,10 +109,30 @@ namespace BookItDependancies
             try
             {
                 cmd.ExecuteNonQuery();
-                return "Entry Added";
+                return "New entry added in " + tableName;
             }
             catch { return "Failed to add data"; }
         }
+
+        /// <summary>
+        /// Remove a specific row in the provided table
+        /// </summary>
+        /// <param name="tableName">Name of table in database</param>
+        /// <param name="rowID">Row id value, primary key in table</param>
+        /// <returns></returns>
+        public static string DeleteRow(string tableName, string rowID)
+        {
+            string strCommand = "DELETE FROM " + tableName + " WHERE " + GetPrimaryKey(tableName) + " = " + rowID;
+            SqlCommand cmd = new SqlCommand(strCommand, connection);
+            try
+            {
+                cmd.ExecuteNonQuery();
+                return "Row " + rowID + " in " + tableName + " has been deleted successfully." ;
+            }
+            catch { return "Failed to remove data"; }
+        }
+
+        
 
         /// <summary>
         /// Opens the database connection
