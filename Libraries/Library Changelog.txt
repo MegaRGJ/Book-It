@@ -26,13 +26,18 @@ V0.2.1 - Server routines added 20/07/2018
 
 V0.2.2 - Server routines added 24/07/2018
 + Remove row from database
-+ Edit existing frows
++ Edit existing rows
 
 V0.2.3 - Permission levels implemented 25/07/2018
 + Added new field in Users database - Permission level
 + Encrpytion protection added for permissions
 + Added permission restrictions on current commands 
 + Added ability to create a booking and view user bookings
+
+V0.2.4 - Server routines added 25/07/2018
++ Fixed GetColumns command
++ Created all table View/Edit/Delete commands
++ Updating permissions system (Still in progress (40%))
 
 --------------------------------------------------
 --------------======= TODO ========---------------
@@ -54,4 +59,11 @@ Create/View Invites
 
 #Security Manager class
 Store encryption pass in database somehow, Ensure that pass is also encypted
+
+######
+Business Permission Levels
+1 - General  - View own employee data
+2 - Elevated - View all employee data
+3 - Business Admin - View and edit all employee data
+4 - Owner    - View and edit all employee and business data
 

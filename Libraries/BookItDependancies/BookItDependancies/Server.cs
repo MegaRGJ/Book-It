@@ -79,7 +79,7 @@ namespace BookItDependancies
         /// <param name="columnsChange"></param>
         /// <param name="newData"></param>
         /// <returns></returns>
-        private static string GeneralUpdateNonQuery(string tableName, string rowID, List<string> columnsChange, List<string> newData)
+        public static string GeneralUpdateNonQuery(string tableName, string rowID, List<string> columnsChange, List<string> newData)
         {
             //First get SET String (Tells the database which columns to update, and with what data)
             string setString = "";
@@ -184,6 +184,18 @@ namespace BookItDependancies
         }
 
         /// <summary>
+        /// Gets data from the database for a given table and given column
+        /// </summary>
+        /// <param name="ID">The primary identifier</param>
+        /// <param name="tableName">Name of table in database</param>
+        /// <param name="columnsRequired">List of columns required</param>
+        /// <returns></returns>
+        public static string GetRowFromID(int ID, string tableName, string columnsRequired)
+        {
+            return GeneralFetchQuery(tableName, new List<string>() { columnsRequired }, GetPrimaryKey(tableName), ID.ToString())[0];
+        }
+
+        /// <summary>
         /// Get Row data where column data is found to match
         /// </summary>
         /// <param name="tableName">Name of table in database</param>
@@ -194,6 +206,19 @@ namespace BookItDependancies
         public static List<String> GetDataFromData(string tableName, List<string> columnsRequested, string columnName, string dataQuery)
         {
             return GeneralFetchQuery(tableName, columnsRequested, columnName, dataQuery);
+        }
+
+        /// <summary>
+        /// Get Row data where column data is found to match
+        /// </summary>
+        /// <param name="tableName">Name of table in database</param>
+        /// <param name="columnsRequested">Names of column that is requested</param>
+        /// <param name="columnName">Column name to check</param>
+        /// <param name="dataQuery">Data to check for</param>
+        /// <returns></returns>
+        public static string GetDataFromData(string tableName, string columnRequested, string columnName, string dataQuery)
+        {
+            return GeneralFetchQuery(tableName, new List<string>() { columnRequested }, columnName, dataQuery)[0];
         }
 
         /// <summary>
@@ -216,7 +241,7 @@ namespace BookItDependancies
         /// <returns></returns>
         public static List<string> GetColumns(string tableName)
         {
-            string strCommand = "SELECT * FROM " + tableName;
+            string strCommand = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'" + tableName + "'";
             SqlDataReader reader = null;
             SqlCommand cmd = new SqlCommand(strCommand, connection);
             List<string> columns = new List<string>();
@@ -296,11 +321,19 @@ namespace BookItDependancies
     /// </summary>
     public class Server
     {
+        //Client user information
         protected int clientPermissionLevel;
         protected int clientUserID;
-        //Requried routines
-        //User Login
-        //GET User information -> input userID and which columns are required, get back required information
+
+        //Client employee information (0 if user is not an employee)
+        protected int clientBusinessID = 0;
+        protected int clientEmployeeID = 0;
+        protected int clientEmployeePermissionLvl = 0;
+        //Business permission levels
+        //1 - General  - View own employee data
+        //2 - Elevated - View all employee data
+        //3 - Business Admin - View and edit all employee data
+        //4 - Owner    - View and edit all employee and business data
 
         #region Main Commands
         /// <summary>
@@ -327,29 +360,102 @@ namespace BookItDependancies
                 clientPermissionLevel = SecurityManager.GetPermissionLevel(permissionString);   //Get permission level
 
                 clientUserID = userID;  //Save user ID to protected class int
+
+                //Now need to get business information
+                List<string> encEmployeeData = ServerCommunication.GetDataFromData("Employees", new List<string>() { "EmployeeID", "BusinessID", "PermissionLvl" }, "UserID", clientUserID.ToString());
+                if (encEmployeeData.Count() > 0) //If user is an employee
+                {
+                    List<string> employeeData = DecryptList(encEmployeeData);
+                    clientEmployeeID = Convert.ToInt32(employeeData[0]);
+                    clientBusinessID = Convert.ToInt32(employeeData[1]);
+                    clientEmployeePermissionLvl = Convert.ToInt32(employeeData[3]);
+                }
                 return true;
             }
             else
                 return false;
         }
 
+        #region Create new table entry commands
+        /// <summary>
+        /// Add a new user to the Users table
+        /// </summary>
+        /// <param name="Name">Full name of user</param>
+        /// <param name="Address">Number and Street name</param>
+        /// <param name="Postcode">User's postcode</param>
+        /// <param name="Email">Email address</param>
+        /// <param name="Phone">Contact phone number</param>
+        /// <param name="Username">Username</param>
+        /// <param name="Password">Password</param>
+        /// <returns></returns>
+        public string AddUser(string Name, string Address, string Postcode, string Email, string Phone, string Username, string Password, int PermissionLevel)
+        {
+            if (clientPermissionLevel < 2)
+                return null;
+            //First encrypt user's new password
+            string salt = SecurityManager.GenerateNewSALT();
+            string encPass = SecurityManager.OneWayEncryptor(Password, salt);
+
+            string permission = SecurityManager.GetPermissionString(PermissionLevel); //Get permission string
+
+            //Then compile into list string
+            List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, DateTime.Today.Date.ToString(), salt, permission }; //Place all data ready for encryption
+            //Now Encrypt data in list
+            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
+            return ServerCommunication.NewTableEntry("Users", encryptedData);       //Add data to table
+        }
+
+        #endregion
+        #region Get || Edit || Delete - Row commands
         /// <summary>
         /// Get a users details from their user ID
         /// </summary>
-        /// <param name="userID">User ID</param>
+        /// <param name="queryID">User ID</param>
         /// <param name="details">Which details are required</param>
         /// <returns></returns>
-        public List<String> GetUser(int userID, List<String> details)
+        public List<String> GetTableRow(string tableName, int queryID, List<String> details)
         {
             //Ensure that server communication is active (i.e. user is logged in), Also ensure columns are valid names
-            if (!ServerCommunication.IsActive || !ParamaterCheck("Users", details))
+            if (!ServerCommunication.IsActive || !ParamaterCheck(tableName, details))
                 return null;
-            //Ensure that user has permission to grab user data
-            if (clientPermissionLevel < 2 && userID != clientUserID)
-                return null;
-            List<String> returnString = ServerCommunication.GetRowFromID(userID, "Users", details); //Gets required information from the database
+            //Check user has permission to view data
+
+
+            List<String> returnString = ServerCommunication.GetRowFromID(queryID, tableName, details); //Gets required information from the database
             return DecryptList(returnString);
         }
+
+        /// <summary>
+        /// Edits user data in the table
+        /// </summary> 
+        /// <param name="columnsChanged">Names of columns to update</param>
+        /// <param name="newDetails">New details, must follow order of columnsChanged</param>
+        /// <param name="userID">User ID of row to change (Leave unchanged for client ID)</param>
+        /// <returns></returns>
+        public string EditTableRow(string tableName, List<string> columnsChanged, List<string> newDetails, int queryID)
+        {
+            //Ensure that server communication is active (i.e. user is logged in) AND validate column names to change
+            if (!ServerCommunication.IsActive || ParamaterCheck(tableName, columnsChanged))
+                return null;
+            //Check user has permission to edit data
+
+
+            return ServerCommunication.GeneralUpdateNonQuery(tableName, queryID.ToString(), columnsChanged, newDetails);
+        }
+
+        /// <summary>
+        /// Removes user from the database, must have admin privallages
+        /// </summary>
+        /// <param name="userID"></param>
+        /// <returns></returns>
+        public string DeleteTableRow(string tableName, int queryID)
+        {
+            //Ensure that server communication is active (i.e. user is logged in) AND User has required permissions to delete a row
+            if (!ServerCommunication.IsActive || clientPermissionLevel < 3 || !ValidateTableName(tableName))
+                return null;
+            return ServerCommunication.DeleteRow(tableName, queryID.ToString());
+        }
+        #endregion
 
         /// <summary>
         /// Creates a new booking in the database
@@ -386,34 +492,7 @@ namespace BookItDependancies
             return DecryptList(encryptedData);                  //Return decrypted data
         }
 
-        /// <summary>
-        /// Add a new user to the Users table
-        /// </summary>
-        /// <param name="Name">Full name of user</param>
-        /// <param name="Address">Number and Street name</param>
-        /// <param name="Postcode">User's postcode</param>
-        /// <param name="Email">Email address</param>
-        /// <param name="Phone">Contact phone number</param>
-        /// <param name="Username">Username</param>
-        /// <param name="Password">Password</param>
-        /// <returns></returns>
-        public string AddUser(string Name, string Address, string Postcode, string Email, string Phone, string Username, string Password, int PermissionLevel)
-        {
-            if (clientPermissionLevel < 2)
-                return null;
-            //First encrypt user's new password
-            string salt = SecurityManager.GenerateNewSALT();
-            string encPass = SecurityManager.OneWayEncryptor(Password, salt);
-
-            string permission = SecurityManager.GetPermissionString(PermissionLevel); //Get permission string
-
-            //Then compile into list string
-            List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, DateTime.Today.Date.ToString(), salt, permission }; //Place all data ready for encryption
-            //Now Encrypt data in list
-            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
-            return ServerCommunication.NewTableEntry("Users", encryptedData);       //Add data to table
-        }
-        #endregion        
+        #endregion
         #region Internal routines
         /// <summary>
         /// Converts bool array to int array (Used for column numbering)
@@ -450,7 +529,51 @@ namespace BookItDependancies
                     if (!columnNames.Contains(col)) //If column is not found then routine fails (returns false)
                         return false;
             }
+            else return false;
             return true;
+        }
+
+        /// <summary>
+        /// Returns whether the table exists or not
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        private bool ValidateTableName(string tableName)
+        {
+            List<string> tables = ServerCommunication.GetTables();
+            if (tables.Contains(tableName))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private bool ValidateGrabRequest(string tableName, int queryID)
+        {
+            switch (tableName)
+            {
+                case "Users":
+                    if (queryID == clientUserID || clientPermissionLevel >= 2) return true; //Users can only grab their own user data (Unless have moderator pemission[2])
+                    break;
+                case "Businesses":
+                    return true; //Should be able to view all business data irrelevant of permission level                     
+                case "Employeees":
+                    if (clientPermissionLevel >= 2) return true;   // Viewable by moderators
+                    if (queryID == clientEmployeeID) return true;  // Employees can view there own data
+                    //Now check if business ID is the same, if user has business permission 2+ they can view all employee data for their business
+                    string businessID = ServerCommunication.GetDataFromData("Employees", "BusinessID", "EmployeeID", SecurityManager.EncryptSK(queryID.ToString()));
+                    if (SecurityManager.DecryptSK(businessID) == clientBusinessID.ToString() && clientEmployeePermissionLvl >= 2)
+                        return true;
+                    break;
+                case "Bookings":
+
+                    break;
+                case "MailBox":
+                    break;
+                case "Invites":
+                    break;
+            }
+            return false;
         }
 
         private List<String> DecryptList(List<String> stringList)
