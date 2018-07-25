@@ -39,6 +39,10 @@ V0.2.4 - Server routines added 25/07/2018
 + Created all table View/Edit/Delete commands
 + Updating permissions system (Still in progress (40%))
 
+V0.2.5 - Permission system updated
++ Permission system completed
+
+
 --------------------------------------------------
 --------------======= TODO ========---------------
 #Server Communications class
@@ -52,10 +56,8 @@ General diagnostic information on database
 Create account function
 Modify table information (only certain information needs to be edited)
 Delete information (Must be somehow user locked - admins/high permission accounts)
-Create/View Mail
-Create/View Businesses
-Create/View Employees (Assign to businesses and userIDs)
-Create/View Invites
+Validating requests -> TODO - Fix shared bookings
+Add more specific (and more useful) call commands
 
 #Security Manager class
 Store encryption pass in database somehow, Ensure that pass is also encypted

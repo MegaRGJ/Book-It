@@ -419,7 +419,8 @@ namespace BookItDependancies
             if (!ServerCommunication.IsActive || !ParamaterCheck(tableName, details))
                 return null;
             //Check user has permission to view data
-
+            if (!ValidateGrabRequest(tableName, queryID))
+                return null;
 
             List<String> returnString = ServerCommunication.GetRowFromID(queryID, tableName, details); //Gets required information from the database
             return DecryptList(returnString);
@@ -566,11 +567,36 @@ namespace BookItDependancies
                         return true;
                     break;
                 case "Bookings":
-
+                    if (clientPermissionLevel >= 2) return true;  // Viewable by moderators
+                    List<string> encDataIDs = ServerCommunication.GetDataFromData("Bookings", new List<string>() { "EmployeeID", "UserID" }, "BookingID", SecurityManager.EncryptSK(queryID.ToString()));
+                    List<string> dataIDs = DecryptList(encDataIDs);
+                    //string employeeID = dataIDs[0];                    
+                    if (dataIDs[1] == clientUserID.ToString())       //Client can see their own bookings
+                        return true;
+                    //TODO - Fix for shared bookings and check for other employees of same businesss                
                     break;
                 case "MailBox":
+                    if (clientPermissionLevel >= 3) return true;    //Viewable by admins (moderators can not view all mail for privacy reasons)
+                    List<string> encData = ServerCommunication.GetDataFromData("MailBox", new List<string>() { "UserID", "EmployeeID" }, "MailID", SecurityManager.EncryptSK(queryID.ToString()));
+                    List<string> data = DecryptList(encData);
+
+                    if (data[0] == clientUserID.ToString() || data[1] == clientEmployeeID.ToString()) return true; //If user has clientID OR employeeID matching, then they are sender or recipient. And can see mail.
+
+                    //Now check if user has high permission level in business of employee
+                    if (clientEmployeePermissionLvl < 3) return false;
+                    string foundBusinessID = ServerCommunication.GetDataFromData("Employees", "BusinessID", "EmployeeID", encData[1]); //Get business ID of employee recipient
+                    if (clientBusinessID.ToString() == SecurityManager.DecryptSK(foundBusinessID)) return true;                        //If user is employeed at business then permit access
+
                     break;
                 case "Invites":
+                    if (clientPermissionLevel >= 2) return true;    //Moderators can view all invites
+
+                    //Get Business ID and UserID from table
+                    List<string> encFoundData = ServerCommunication.GetDataFromData("Invites", new List<string>() { "BusinessID", "UserID" }, "InviteID", SecurityManager.EncryptSK(queryID.ToString()));
+                    List<string> foundData = DecryptList(encFoundData);
+
+                    if (foundData[1] == clientUserID.ToString()) return true; //Users can view their own invites
+                    if (foundData[0] == clientBusinessID.ToString()) return true;//Business users can view their sent invites
                     break;
             }
             return false;
