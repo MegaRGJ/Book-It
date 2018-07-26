@@ -19,10 +19,11 @@ BusinessID	|	1	|	3
 Name		|	1	|	2
 Address		|	1	|	2
 Postcode	|	1	|	2
+Phone		|	1   |   2
 Email		|	1	|	2
 Description |	1	|	2
 Active		|	1	|	3
-SharedBook. |	2	|	2
+SharedBook. |	1	|	2
 
 Employees: -----------
 EmployeeID	|	1	|	3
@@ -56,3 +57,50 @@ InviteCode	|	2	|	2
 DateTime	|	2	|	2
 Expires		|	2	|	2
 Uses		|	2	|	2
+
+###################################################
+Business permissions
+			  FETCH	   EDIT
+Businesses: ----------------
+BusinessID	|	1	|	0
+Name		|	1	|	4
+Address		|	1	|	4
+Postcode	|	1	|	4
+Phone		|	1   |   4
+Email		|	1	|	4
+Description |	1	|	3
+Active		|	1	|	0
+SharedBook. |	1	|	3
+
+Employees: -----------
+EmployeeID	|	1	|	0
+BusinessID	|	1	|	0
+UserID		|	1	|	0
+PermissionL.|	2	|	4
+Availability|	1	|	3
+Ammendments	|	1	|	3
+
+Bookings: ------------
+BookingID	|	2	|	0
+EmployeeID  |	2	|	0
+UserID		|	2	|	0
+DateTime	|	2	|	3
+Duration	|	2	|	3
+Description	|	2	|	2
+Cancellation|	2	|	3
+
+MailBox: -------------
+MailID		|	2	|	0
+UserID		|	2	|	0
+EmployeeID	|	2	|	0
+Message		|	3	|	3
+DateTime	|	2	|	3
+
+Invites: -------------
+InviteID	|	2	|	0
+BusinessID	|	2	|	0
+UserID		|	2	|	3
+InviteCode	|	2	|	0
+DateTime	|	2	|	0
+Expires		|	2	|	3
+Uses		|	2	|	3
