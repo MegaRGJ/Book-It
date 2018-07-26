@@ -42,6 +42,9 @@ V0.2.4 - Server routines added 25/07/2018
 V0.2.5 - Permission system updated
 + Permission system completed
 
+V0.3 - Permission system fixed
++ Small overhaul on permission system, now stores all fetch/edit requirements
+-- Still need to permit users to edit their own business information
 
 --------------------------------------------------
 --------------======= TODO ========---------------
