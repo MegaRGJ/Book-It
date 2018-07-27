@@ -56,9 +56,7 @@ namespace BookItDependancies
             else
                 columns = ListToColumnString(columnsRequested);
 
-            string encrDataQuery = SecurityManager.EncryptSK(dataQuery);
-
-            string commandString = "SELECT " + columns + " FROM " + tableName + " WHERE " + columnCheck + " = " + encrDataQuery;
+            string commandString = "SELECT " + columns + " FROM " + tableName + " WHERE " + columnCheck + " = " + dataQuery;
 
             SqlDataReader reader = null;
             SqlCommand cmd = new SqlCommand(commandString, connection);
@@ -91,8 +89,8 @@ namespace BookItDependancies
                     setString += ",";
             }
 
-            string strCommand = "UPDATE " + tableName + "SET " + setString + " WHERE " + GetPrimaryKey(tableName) + " = " + rowID;
-            SqlCommand cmd = new SqlCommand(strCommand, connection);
+            string commandString = "UPDATE " + tableName + "SET " + setString + " WHERE " + GetPrimaryKey(tableName) + " = " + rowID;
+            SqlCommand cmd = new SqlCommand(commandString, connection);
             try
             {
                 cmd.ExecuteNonQuery();
@@ -111,7 +109,7 @@ namespace BookItDependancies
         {
             List<string> columns = GetColumns(tableName);
             string columnString = ListToColumnBracket(columns);
-            string strCommand = "INSERT INTO " + tableName + "(" + columnString;
+            string strCommand = "INSERT INTO " + tableName + "(" + columnString + ")";
             SqlCommand cmd = new SqlCommand(strCommand, connection);
             try
             {
@@ -291,7 +289,7 @@ namespace BookItDependancies
         {
             string columnString = "";
             foreach (string s in columns)
-                columnString = "[" + s + "]";
+                columnString += "[" + s + "],";
             return columnString.Remove(columnString.Length - 1);
         }
 
@@ -322,13 +320,13 @@ namespace BookItDependancies
     public class Server
     {
         //Client user information
-        protected int clientPermissionLevel;
-        protected int clientUserID;
+        protected static int clientPermissionLevel;
+        protected static int clientUserID;
 
         //Client employee information (0 if user is not an employee)
-        protected int clientBusinessID = 0;
-        protected int clientEmployeeID = 0;
-        protected int clientEmployeePermissionLvl = 0;
+        protected static int clientBusinessID = 0;
+        protected static int clientEmployeeID = 0;
+        protected static int clientEmployeePermissionLvl = 0;
         //Business permission levels
         //1 - General  - View own employee data
         //2 - Elevated - View all employee data
@@ -336,12 +334,33 @@ namespace BookItDependancies
         //4 - Owner    - View and edit all employee and business data
 
         /// <summary>
+        /// Set the database connection, returns false if connection fails
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        /// <param name="server"></param>
+        /// <param name="database"></param>
+        /// <returns></returns>
+        public static bool ConnectToDatabase(string username, string password, string server, string database)
+        {
+            //First set connection to database
+            try
+            {
+                ServerCommunication.SetConnection(username, password, server, database);
+                //Now check if connection is valid
+                ServerCommunication.Open();
+                return true;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>
         /// Log in routine, used to verify identity of user
         /// </summary>
         /// <param name="username">Username</param>
         /// <param name="password">User's password</param>
         /// <returns></returns>
-        public bool Login(string username, string password)
+        public static bool Login(string username, string password)
         {
             if (!ServerCommunication.IsActive) return false; //Ensure there is an active connection to the database
             //Firstly find username in database
@@ -355,16 +374,17 @@ namespace BookItDependancies
             if (encPass == pass)
             {
                 string encPermissionString = ServerCommunication.GetRowFromID(userID, "Users", new List<string>() { "Permission" })[0]; //Get encrypted permission string
-                string permissionString = SecurityManager.DecryptSK(encPermissionString);       //Decrypt to get permission string
+                string permissionString = SecurityManager.DecryptDatabaseData("PermissionLevel", encPermissionString);       //Decrypt to get permission string
                 clientPermissionLevel = SecurityManager.GetPermissionLevel(permissionString);   //Get permission level
 
                 clientUserID = userID;  //Save user ID to protected class int
 
                 //Now need to get business information
-                List<string> encEmployeeData = ServerCommunication.GetDataFromData("Employees", new List<string>() { "EmployeeID", "BusinessID", "PermissionLvl" }, "UserID", clientUserID.ToString());
+                List<string> requestingColumns = new List<string>() { "EmployeeID", "BusinessID", "PermissionLvl" };
+                List<string> encEmployeeData = ServerCommunication.GetDataFromData("Employees", requestingColumns, "UserID", clientUserID.ToString());
                 if (encEmployeeData.Count() > 0) //If user is an employee
                 {
-                    List<string> employeeData = DecryptList(encEmployeeData);
+                    List<string> employeeData = SecurityManager.DecryptDatabaseData(requestingColumns, encEmployeeData);
                     clientEmployeeID = Convert.ToInt32(employeeData[0]);
                     clientBusinessID = Convert.ToInt32(employeeData[1]);
                     clientEmployeePermissionLvl = Convert.ToInt32(employeeData[3]);
@@ -373,6 +393,17 @@ namespace BookItDependancies
             }
             else
                 return false;
+        }
+
+        public static bool TEMPAdminLoging(string user, string pass)
+        {
+            if (user == "Admin" && pass == "admin1")
+            {
+                clientPermissionLevel = 3;
+                clientUserID = 0;
+                return true;
+            }
+            return false;
         }
 
         #region Create new table entry commands
@@ -387,7 +418,7 @@ namespace BookItDependancies
         /// <param name="Username">Username</param>
         /// <param name="Password">Password</param>
         /// <returns></returns>
-        public string AddUser(string Name, string Address, string Postcode, string Email, string Phone, string Username, string Password, int PermissionLevel)
+        public static string AddUser(string Name, string Address, string Postcode, string Email, string Phone, string Username, string Password, int PermissionLevel)
         {
             if (!ServerCommunication.IsActive) return "Connection not set"; //Ensure server communication is active
             if (clientPermissionLevel < 2)
@@ -399,9 +430,10 @@ namespace BookItDependancies
             string permission = SecurityManager.GetPermissionString(PermissionLevel); //Get permission string
 
             //Then compile into list string
+            List<string> columns = new List<string>() { "Name", "Address", "Postcode", "Email", "Phone", "Username", "LastLogin", "Salt", "Permisison" };
             List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, DateTime.Today.Date.ToString(), salt, permission }; //Place all data ready for encryption
             //Now Encrypt data in list
-            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
+            List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData);                      //Encrypt all data
             return ServerCommunication.NewTableEntry("Users", encryptedData);       //Add data to table
         }
         /// <summary>
@@ -416,12 +448,14 @@ namespace BookItDependancies
         /// <param name="active">Is the business active?</param>
         /// <param name="sharedBookings">Does the business have bookings split between all employees?</param>
         /// <returns></returns>
-        public string AddBusiness(string Name, string Address, string Postcode, string phone, string email, string Description, bool active, bool sharedBookings)
+        public static string AddBusiness(string Name, string Address, string Postcode, string email, string phone, string Description, bool active, bool sharedBookings)
         {
             if (!ServerCommunication.IsActive) return "Connection not set"; //Ensure server communication is active
             if (clientPermissionLevel != 3) return null; //Only admins can add new business accounts
-            List<string> newData = new List<string>() { Name, Address, Postcode, phone, email, Description, active.ToString(), sharedBookings.ToString() };
-            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
+            List<string> columns = new List<string>() { "Name", "Address", "Postcode", "Email", "Phone", "Description ", "Active", "SharedBookings" };
+
+            List<string> newData = new List<string>() { Name, Address, Postcode, email, phone, Description, active.ToString(), sharedBookings.ToString() };
+            List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData);                      //Encrypt all data
             return ServerCommunication.NewTableEntry("Businesses", encryptedData);  //Add data to table
         }
         /// <summary>
@@ -433,12 +467,13 @@ namespace BookItDependancies
         /// <param name="availability">Availability of employee (see documentation for details)</param>
         /// <param name="ammendments">Ammendments to availability (see documentation for details) </param>
         /// <returns></returns>
-        public string AddEmployee(int businessID, int userID, string permissionLevel, List<string> availability, List<string> ammendments)
+        public static string AddEmployee(int businessID, int userID, string permissionLevel, List<string> availability, List<string> ammendments)
         {
             if (!ServerCommunication.IsActive) return "Connection not set"; //Ensure server communication is active
             if (clientPermissionLevel != 3 || (businessID == clientBusinessID && clientEmployeePermissionLvl == 4)) return null; //Only admins and business owners can create employee accounts
             List<string> newData = new List<string>() { businessID.ToString(), userID.ToString(), permissionLevel, FormatAvailability(availability), FormatAmmendments(ammendments) };
-            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
+            List<string> columns = new List<string>() { "BusinessIDUserID", "PermissionLevel", "Availability", "Ammendments", };
+            List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData); //Encrypt all data
             return ServerCommunication.NewTableEntry("Employees", encryptedData);   //Add data to table
         }
         /// <summary>
@@ -451,14 +486,16 @@ namespace BookItDependancies
         /// <param name="description">Description (if required)</param>
         /// <param name="cancellation">Cancellation reason (booking is conisdered cancelled if this is NOT blank)</param>
         /// <returns></returns>
-        public string AddBooking(int employeeID, int userID, DateTime bookingDateTime, int duration, string description, string cancellation = "")
+        public static string AddBooking(int employeeID, int userID, DateTime bookingDateTime, int duration, string description, string cancellation = "")
         {
             if (!ServerCommunication.IsActive) return "Connection not set"; //Ensure server communication is active
             if (userID != clientUserID && clientPermissionLevel < 2) return "Insufficient Permissions";
             string bookingTime = bookingDateTime.ToString("yyyMMddHHmm");
 
+            List<string> columns = new List<string>() { "EmployeeID  ", "UserID", "DateTime", "Duration", "Description", "Cancellation", };
             List<string> newData = new List<string>() { employeeID.ToString(), userID.ToString(), bookingTime, duration.ToString(), description, cancellation };
-            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
+
+            List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData); //Encrypt all data                
             return ServerCommunication.NewTableEntry("Employees", encryptedData);   //Add data to table
         }
         /// <summary>
@@ -468,14 +505,15 @@ namespace BookItDependancies
         /// <param name="employeeID">ID of employee recipient</param>
         /// <param name="message">Message string</param>
         /// <returns></returns>
-        public string AddMail(int userID, int employeeID, string message)
+        public static string AddMail(int userID, int employeeID, string message)
         {
             if (!ServerCommunication.IsActive) return "Connection not set"; //Ensure server communication is active
             if (userID != clientUserID) return "Invalid request (you cannot send mail on behalf of another user)";
             string sentTime = DateTime.Now.ToString("yyyMMddHHmm");
-
+            List<string> columns = new List<string>() { "UserID", "EmployeeID", "Message", "DateTime", };
             List<string> newData = new List<string>() { userID.ToString(), employeeID.ToString(), message, sentTime };
-            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
+
+            List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData);  //Encrypt all data           
             return ServerCommunication.NewTableEntry("Employees", encryptedData);   //Add data to table
         }
         /// <summary>
@@ -487,7 +525,7 @@ namespace BookItDependancies
         /// <param name="Uses">Number of uses allowed ('-1' for unlimited)</param>
         /// <param name="noExpirary">True if invite does not expire</param>
         /// <returns></returns>
-        public string AddInvite(int businessID, int userID, DateTime Expirary, int Uses, bool noExpirary = false)
+        public static string AddInvite(int businessID, int userID, DateTime Expirary, int Uses, bool noExpirary = false)
         {
             if (!ServerCommunication.IsActive) return "Connection not set"; //Ensure server communication is active
             if (clientBusinessID != businessID || clientPermissionLevel < 2) return "Insufficient Permissions";
@@ -498,8 +536,10 @@ namespace BookItDependancies
             string inviteTime = DateTime.Now.ToString("yyyMMddHHmm"); //Current time of sending
             string inviteCode = GenerateInviteCode();
 
+            List<string> columns = new List<string>() { "BusinessID", "UserID", "InviteCode", "DateTime", "Expires", "Uses", };
             List<string> newData = new List<string>() { businessID.ToString(), userID.ToString(), inviteCode, inviteTime, expiraryTime, Uses.ToString() };
-            List<string> encryptedData = EncryptList(newData);                      //Encrypt all data
+
+            List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData);   //Encrypt all data
             return ServerCommunication.NewTableEntry("Employees", encryptedData);   //Add data to table
         }
         #endregion
@@ -511,14 +551,14 @@ namespace BookItDependancies
         /// <param name="columnsRequested">Columns requested</param>
         /// <param name="queryID">Query ID (Primary key of tableName) to search for</param>
         /// <returns></returns>
-        public List<string> FetchData(string tableName, List<string> columnsRequested, int queryID)
+        public static List<string> FetchData(string tableName, List<string> columnsRequested, int queryID)
         {
             if (!ServerCommunication.IsActive) return new List<string>() { "Connection not set" }; //Ensure server communication is active
             if (!SecurityManager.ValidateFetchRequest(tableName, columnsRequested, queryID, clientUserID, clientPermissionLevel, clientBusinessID, clientEmployeeID, clientEmployeePermissionLvl))
                 return new List<string>() { "Insufficient Permissions" };
             //If user has requried permissions, then fetch data
             List<String> returnString = ServerCommunication.GetRowFromID(queryID, tableName, columnsRequested); //Gets required information from the database
-            return DecryptList(returnString);
+            return SecurityManager.DecryptDatabaseData(columnsRequested, returnString);
         }
 
         /// <summary>
@@ -529,13 +569,13 @@ namespace BookItDependancies
         /// <param name="queryID">Query ID (Primary key of tableName) to search for</param>
         /// <param name="updatedData">Data to replace</param>
         /// <returns></returns>
-        public string EditData(string tableName, List<string> columnsRequested, int queryID, List<string> updatedData)
+        public static string EditData(string tableName, List<string> columnsRequested, int queryID, List<string> updatedData)
         {
             if (!ServerCommunication.IsActive) return "Connection not set"; //Ensure server communication is active
             if (!SecurityManager.ValidateEditRequest(tableName, columnsRequested, queryID, clientUserID, clientPermissionLevel, clientBusinessID, clientEmployeeID, clientEmployeePermissionLvl))
                 return "Insufficient Permissions";
             //If user has requried permissions, then edit data
-            List<string> encryptData = EncryptList(updatedData);
+            List<string> encryptData = SecurityManager.EncryptDatabaseData(columnsRequested, updatedData);
             return ServerCommunication.GeneralUpdateNonQuery(tableName, queryID.ToString(), columnsRequested, encryptData);
         }
 
@@ -544,7 +584,7 @@ namespace BookItDependancies
         /// </summary>
         /// <param name="queryID">ID of row to be deleted</param>
         /// <returns></returns>
-        public string DeleteTableRow(string tableName, int queryID)
+        public static string DeleteTableRow(string tableName, int queryID)
         {
             //Ensure that server communication is active (i.e. user is logged in) AND User has required permissions to delete a row
             if (!ServerCommunication.IsActive || clientPermissionLevel < 3 || !ValidateTableName(tableName))
@@ -555,11 +595,16 @@ namespace BookItDependancies
 
         #region Internal routines
         /// <summary>
+        /// Returns the logged in user's permission level
+        /// </summary>
+        /// <returns></returns>
+        public static int GetUserPermissionLevel() { return clientPermissionLevel; }
+        /// <summary>
         /// Converts bool array to int array (Used for column numbering)
         /// </summary>
         /// <param name="boolArray"></param>
         /// <returns></returns>
-        private int[] BoolToIntArray(bool[] boolArray)
+        private static int[] BoolToIntArray(bool[] boolArray)
         {
             int[] intArray = new int[boolArray.Length];
             int counter = 0;
@@ -577,7 +622,7 @@ namespace BookItDependancies
         /// <param name="tableName">Name of table in database</param>
         /// <param name="columns">List of column names searched</param>
         /// <returns></returns>
-        private bool ParamaterCheck(string tableName, List<string> columns)
+        private static bool ParamaterCheck(string tableName, List<string> columns)
         {
             //First check if table exists
             List<string> tables = ServerCommunication.GetTables();
@@ -598,7 +643,7 @@ namespace BookItDependancies
         /// </summary>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        private bool ValidateTableName(string tableName)
+        private static bool ValidateTableName(string tableName)
         {
             List<string> tables = ServerCommunication.GetTables();
             if (tables.Contains(tableName))
@@ -607,36 +652,17 @@ namespace BookItDependancies
             }
             return false;
         }
-
-        private List<String> DecryptList(List<String> stringList)
-        {
-            List<String> Decrypted = new List<String>();
-            foreach (string s in stringList)
-            {
-                Decrypted.Add(SecurityManager.DecryptSK(s));
-            }
-            return Decrypted;
-        }
-
-        private List<String> EncryptList(List<String> stringList)
-        {
-            List<String> Encrypted = new List<String>();
-            foreach (string s in stringList)
-            {
-                Encrypted.Add(SecurityManager.EncryptSK(s));
-            }
-            return Encrypted;
-        }
         #endregion
 
         #region DataHandling routines
-        private string FormatAvailability(List<string> availability) { return null; }
-        private string FormatAmmendments(List<string> ammendments) { return null; }
+        //TODO
+        private static string FormatAvailability(List<string> availability) { return null; }
+        private static string FormatAmmendments(List<string> ammendments) { return null; }
 
-        private List<string> GetAvailability(string availability) { return null; }
-        private List<string> GetAmmendments(string ammendments) { return null; }
+        private static List<string> GetAvailability(string availability) { return null; }
+        private static List<string> GetAmmendments(string ammendments) { return null; }
 
-        private string GenerateInviteCode()
+        private static string GenerateInviteCode()
         {
             Random random = new Random();
             const string chars = "ABCDEFGHJKLMNOPQRSTUVWXYabcdefghijkmnopqrstuvwxy0123456789"; //Note the following characters have been omitted : 'I' 'Z' 'l' 'z' (for convienience)

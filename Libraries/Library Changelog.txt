@@ -52,6 +52,14 @@ V0.3.1 - Updates permission system 26/07/2018
 + Delete function re-added
 + Added all row creation functions (work required for employees however ++ validation on inputted data)
 
+V0.4.0 - Complete overhaul of permissions and two way encryption 27/07/2018
++ Rebuilt many permission validation routines, now far more efficient
++ Redesigned how data is encrypted and omitted certain fields from encryption (primary Keys and important IDS)
++ Changed how search queries are handled, these are now limited to certain fields (All IDs, Name and Email)
++ Fetch routine fixed, small error in how columns were defined during sql request
++ Fixed log in routine
++ Fixed all new table entry commands for new encryption handler
+
 --------------------------------------------------
 --------------======= TODO ========---------------
 #Server Communications class
