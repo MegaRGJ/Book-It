@@ -33,6 +33,7 @@ namespace BookItDependancies
             if (trusted)
                 connectionString += "Trusted_Connection=true;";
             connectionString += "Initial Catalog=" + database + ";";
+            connectionString += "MultipleActiveResultSets=true;";
             connectionString += "connection timeout=" + timeout;
 
             connection = new SqlConnection(connectionString);
@@ -56,7 +57,7 @@ namespace BookItDependancies
             else
                 columns = ListToColumnString(columnsRequested);
 
-            string commandString = "SELECT " + columns + " FROM " + tableName + " WHERE " + columnCheck + " = " + dataQuery;
+            string commandString = "SELECT " + columns + " FROM " + tableName + " WHERE " + columnCheck + " = '" + dataQuery + "';";
 
             SqlDataReader reader = null;
             SqlCommand cmd = new SqlCommand(commandString, connection);
@@ -109,14 +110,15 @@ namespace BookItDependancies
         {
             List<string> columns = GetColumns(tableName);
             string columnString = ListToColumnBracket(columns);
-            string strCommand = "INSERT INTO " + tableName + "(" + columnString + ")";
+            string dataString = ListToColumnBracket(data, false, true);
+            string strCommand = "INSERT INTO " + tableName + columnString + " VALUES " + dataString + ";";
             SqlCommand cmd = new SqlCommand(strCommand, connection);
             try
             {
                 cmd.ExecuteNonQuery();
                 return "New entry added in " + tableName;
             }
-            catch { return "Failed to add data"; }
+            catch (Exception e) { return "Failed to add data, ERROR: " + e; }
         }
 
         /// <summary>
@@ -166,7 +168,9 @@ namespace BookItDependancies
         public static int GetIDFromData(string tableName, string columnName, string dataQuery)
         {
             List<string> queryResponse = GeneralFetchQuery(tableName, new List<string>() { GetPrimaryKey(tableName) }, columnName, dataQuery);
-            return Convert.ToInt32(queryResponse[0]);
+            if (queryResponse != null)
+                return Convert.ToInt32(queryResponse[0]);
+            else return -1;
         }
         #endregion
         /// <summary>
@@ -239,13 +243,13 @@ namespace BookItDependancies
         /// <returns></returns>
         public static List<string> GetColumns(string tableName)
         {
-            string strCommand = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'" + tableName + "'";
+            string strCommand = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "'";
             SqlDataReader reader = null;
             SqlCommand cmd = new SqlCommand(strCommand, connection);
             List<string> columns = new List<string>();
             //string[] columns = new string[reader.FieldCount];
-            for (int i = 0; i < reader.FieldCount; i++)
-                columns.Add(reader.GetName(i));
+            reader = cmd.ExecuteReader();
+            while (reader.Read()) columns.Add(reader.GetString(0));
             return columns;
         }
 
@@ -299,17 +303,23 @@ namespace BookItDependancies
         /// <param name="columns"></param>
         /// <param name="ignorePrimary"></param>
         /// <returns></returns>
-        private static string ListToColumnBracket(List<string> columns, bool ignorePrimary = true)
+        private static string ListToColumnBracket(List<string> columns, bool ignorePrimary = true, bool includeApos = false)
         {
             string str = "(";
-            for (int n = 0; n < columns.Count(); n++)
+            int p = 0;
+            if (ignorePrimary) p++;
+            for (int n = p; n < columns.Count(); n++)
             {
-                if (n == 0 && !ignorePrimary) str += columns[0] + ", ";
-                else str += columns[n] + ", ";
-
+                if (includeApos) str += "'";
+                str += columns[n];
+                if (includeApos) str += "'";
+                if (n != columns.Count() - 1)
+                    str += ", ";
             }
-            return str.Remove(str.Length - 1);
+            return str + ")";
         }
+
+
         #endregion
 
     }
@@ -349,6 +359,7 @@ namespace BookItDependancies
                 ServerCommunication.SetConnection(username, password, server, database);
                 //Now check if connection is valid
                 ServerCommunication.Open();
+                Columns.IntialiseColumns();
                 return true;
             }
             catch { return false; }
@@ -364,7 +375,8 @@ namespace BookItDependancies
         {
             if (!ServerCommunication.IsActive) return false; //Ensure there is an active connection to the database
             //Firstly find username in database
-            int userID = ServerCommunication.GetIDFromData("Users", "Username", username);
+            int userID = ServerCommunication.GetIDFromData("Users", "Username", SecurityManager.EncryptDatabaseData("Username", username));
+            if (userID == -1) return false;
             //Fetch encrypted password from database
             List<string> fetchedData = ServerCommunication.GetRowFromID(userID, "Users", new List<string>() { "Password", "Salt" });
             string pass = fetchedData[0];
@@ -430,8 +442,8 @@ namespace BookItDependancies
             string permission = SecurityManager.GetPermissionString(PermissionLevel); //Get permission string
 
             //Then compile into list string
-            List<string> columns = new List<string>() { "Name", "Address", "Postcode", "Email", "Phone", "Username", "LastLogin", "Salt", "Permisison" };
-            List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, DateTime.Today.Date.ToString(), salt, permission }; //Place all data ready for encryption
+            List<string> columns = new List<string>() { "Name", "Address", "Postcode", "Email", "Phone", "Username", "Password", "LastLogin", "Salt", "Permisison" };
+            List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, DateTime.Today.Date.ToString(), encPass, salt, permission }; //Place all data ready for encryption
             //Now Encrypt data in list
             List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData);                      //Encrypt all data
             return ServerCommunication.NewTableEntry("Users", encryptedData);       //Add data to table
