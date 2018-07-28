@@ -3,7 +3,7 @@
 ## Create the BookIt datbase with all tables
 CREATE DATABASE BookIT
 CREATE TABLE Users(
-UserID int NOT NULL PRIMARY KEY,
+UserID int IDENTITY(1,1) PRIMARY KEY,
 Name varchar(255),
 Address varchar(255),
 Postcode varchar(255),
@@ -16,7 +16,7 @@ Salt varchar(255),
 Permission  varchar(255),
 )
 CREATE TABLE Businesses(
-BusinessID int NOT NULL PRIMARY KEY,
+BusinessID int IDENTITY(1,1) PRIMARY KEY,
 Name varchar(255),
 Address varchar(255),
 Postcode varchar(255),
@@ -27,7 +27,7 @@ Active varchar(255),
 SharedBookings varchar(255),
 )
 CREATE TABLE Employees(
-EmployeeID int NOT NULL PRIMARY KEY,
+EmployeeID int IDENTITY(1,1) PRIMARY KEY,
 BusinessID int NOT NULL,
 UserID int NOT NULL,
 PermissionLevel varchar(255),
@@ -35,7 +35,7 @@ Availability varchar(255),
 Ammendments varchar(255),
 )
 CREATE TABLE Bookings(
-BookingID int NOT NULL PRIMARY KEY,
+BookingID int IDENTITY(1,1) PRIMARY KEY,
 EmployeeID   int NOT NULL,
 UserID int NOT NULL,
 DateTime varchar(255),
@@ -44,14 +44,14 @@ Description varchar(255),
 Cancellation varchar(255),
 )
 CREATE TABLE MailBox(
-MailID int NOT NULL PRIMARY KEY,
+MailID int IDENTITY(1,1) PRIMARY KEY,
 UserID int NOT NULL,
 EmployeeID int NOT NULL,
 Message varchar(255),
 DateTime varchar(255),
 )
 CREATE TABLE Invites(
-InviteID int NOT NULL PRIMARY KEY,
+InviteID int IDENTITY(1,1) PRIMARY KEY,
 BusinessID int NOT NULL,
 UserID int NOT NULL,
 InviteCode varchar(255),

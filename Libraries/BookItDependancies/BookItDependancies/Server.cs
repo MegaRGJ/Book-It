@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace BookItDependancies
 {
-    public class ServerCommunication
+    class ServerCommunication
     {
         private static SqlConnection connection;
         private static bool connectionSet = false;
@@ -168,7 +168,7 @@ namespace BookItDependancies
         public static int GetIDFromData(string tableName, string columnName, string dataQuery)
         {
             List<string> queryResponse = GeneralFetchQuery(tableName, new List<string>() { GetPrimaryKey(tableName) }, columnName, dataQuery);
-            if (queryResponse != null)
+            if (queryResponse != null && queryResponse.Count() != 0)
                 return Convert.ToInt32(queryResponse[0]);
             else return -1;
         }
@@ -380,10 +380,11 @@ namespace BookItDependancies
             //Fetch encrypted password from database
             List<string> fetchedData = ServerCommunication.GetRowFromID(userID, "Users", new List<string>() { "Password", "Salt" });
             string pass = fetchedData[0];
-            string salt = fetchedData[1];
+            string salt = SecurityManager.DecryptDatabaseData("Salt", fetchedData[1]);
             //Check with user provided password
-            string encPass = SecurityManager.OneWayEncryptor(password, salt);
-            if (encPass == pass)
+            string encPass1 = SecurityManager.OneWayEncryptor(password, salt);
+            string encPass2 = SecurityManager.EncryptDatabaseData("Password", encPass1);
+            if (encPass2 == pass)
             {
                 string encPermissionString = ServerCommunication.GetRowFromID(userID, "Users", new List<string>() { "Permission" })[0]; //Get encrypted permission string
                 string permissionString = SecurityManager.DecryptDatabaseData("PermissionLevel", encPermissionString);       //Decrypt to get permission string
@@ -392,7 +393,7 @@ namespace BookItDependancies
                 clientUserID = userID;  //Save user ID to protected class int
 
                 //Now need to get business information
-                List<string> requestingColumns = new List<string>() { "EmployeeID", "BusinessID", "PermissionLvl" };
+                List<string> requestingColumns = new List<string>() { "EmployeeID", "BusinessID", "PermissionLevel" };
                 List<string> encEmployeeData = ServerCommunication.GetDataFromData("Employees", requestingColumns, "UserID", clientUserID.ToString());
                 if (encEmployeeData.Count() > 0) //If user is an employee
                 {
@@ -405,19 +406,7 @@ namespace BookItDependancies
             }
             else
                 return false;
-        }
-
-        public static bool TEMPAdminLoging(string user, string pass)
-        {
-            if (user == "Admin" && pass == "admin1")
-            {
-                clientPermissionLevel = 3;
-                clientUserID = 0;
-                return true;
-            }
-            return false;
-        }
-
+        }        
         #region Create new table entry commands
         /// <summary>
         /// Add a new user to the Users table
@@ -443,7 +432,7 @@ namespace BookItDependancies
 
             //Then compile into list string
             List<string> columns = new List<string>() { "Name", "Address", "Postcode", "Email", "Phone", "Username", "Password", "LastLogin", "Salt", "Permisison" };
-            List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, DateTime.Today.Date.ToString(), encPass, salt, permission }; //Place all data ready for encryption
+            List<string> newData = new List<string>() { Name, Address, Postcode, Email, Phone, Username, encPass, DateTime.Today.Date.ToString(), salt, permission }; //Place all data ready for encryption
             //Now Encrypt data in list
             List<string> encryptedData = SecurityManager.EncryptDatabaseData(columns, newData);                      //Encrypt all data
             return ServerCommunication.NewTableEntry("Users", encryptedData);       //Add data to table

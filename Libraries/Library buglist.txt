@@ -4,4 +4,4 @@
 - Null columns throws error in permission check
 - If requested columns is not in same order to returning columns, then decryption could fail.
   Need to verify order before making fetch request!
- 
+- Cannot log on (Encryption error)
