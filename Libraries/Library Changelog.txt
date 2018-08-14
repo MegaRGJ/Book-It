@@ -60,6 +60,16 @@ V0.4.0 - Complete overhaul of permissions and two way encryption 27/07/2018
 + Fixed log in routine
 + Fixed all new table entry commands for new encryption handler
 
+V0.4.1 - Fixed null error 30/07/2018
++ Fixed null error on fetch request
+
+V1.0.0 - Overhall of library 14/08/2018
++ Completly redesigned valiation process
++ Added new database table for permissions
++ Cleaned Server and ServerCommunication files
+! AdminConsole will no longer work, depreciated commands
+! Still numerous baseline functions to be added
+
 --------------------------------------------------
 --------------======= TODO ========---------------
 #Server Communications class
@@ -79,6 +89,10 @@ Input validation for commands
 !!! Need to handle employee availability and ammendments !!! <<----- Top priority
 Need to ensure dataTime.Now gets internet time not device time (could mess up some things - Likely future bug)
  ---> see sql database get database time!!
+Validate data entry into database !!!
+
+!!!!!!!!!!!!!!!! --->>>> BREAKING BUG : Object list takes last value only (no fucking idea why)<<<<---- !!!!!!!!!!!!!!!!!!!!!!!
+
 #Security Manager class
 Store encryption pass in database somehow, Ensure that pass is also encypted
 
