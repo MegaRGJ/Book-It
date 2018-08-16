@@ -61,7 +61,11 @@ namespace BookItDependancies
         #region Generic command routines
         private static List<List<string>> GeneralFetchQuery(string tableName, string columnRequested, string queryColumn, string dataQuery)
         {
-            return GeneralFetchQuery(tableName, new List<string>() { columnRequested }, queryColumn, dataQuery);
+            List<string> columnsReq = null;
+            if (columnRequested == null)
+                return GeneralFetchQuery(tableName, columnsReq, queryColumn, dataQuery);
+            else
+                return GeneralFetchQuery(tableName, new List<string>() { columnRequested }, queryColumn, dataQuery);
         }
 
         private static List<List<string>> GeneralFetchQuery(string tableName, List<string> columnsRequested, string queryColumn, string dataQuery)
@@ -80,6 +84,7 @@ namespace BookItDependancies
             SqlDataReader reader = null;
             SqlCommand cmd = new SqlCommand(commandString, connection);
             List<List<string>> responses = new List<List<string>>();
+            reader = cmd.ExecuteReader();
             while (reader.Read())
             {
                 List<string> response = new List<string>();
@@ -375,7 +380,11 @@ namespace BookItDependancies
         private static int GetUserID(string username)
         {
             if (!ServerCommunication.IsActive || LoggedIn) return -1;
-            return ServerCommunication.GetIDFromQuery("Users", "username", SecurityManager.EncryptDatabaseData("Username", username));
+            try
+            {
+                return ServerCommunication.GetIDFromQuery("Users", "Username", SecurityManager.EncryptDatabaseData("Username", username));
+            }
+            catch { return -1; }
         }
 
         private static void SetNewCryptographicToken(string userSalt)
