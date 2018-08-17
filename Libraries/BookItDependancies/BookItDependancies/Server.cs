@@ -127,12 +127,9 @@ namespace BookItDependancies
             string dataString = ListToColumnBracket(data, false, true);
             string strCommand = "INSERT INTO " + tableName + columnString + " VALUES " + dataString + ";";
             SqlCommand cmd = new SqlCommand(strCommand, connection);
-            try
-            {
-                cmd.ExecuteNonQuery();
-                return "New entry added in " + tableName;
-            }
-            catch (Exception e) { return "Failed to add data, ERROR: " + e; }
+
+            cmd.ExecuteNonQuery();
+            return "New entry added in " + tableName;
         }
         #endregion
 
@@ -200,7 +197,23 @@ namespace BookItDependancies
         }
         #endregion
 
-        #region Data update commands
+        #region Data update commands  
+        /// <summary>
+        /// Add new data to a given table, new data must match table columns
+        /// </summary>
+        /// <param name="tableName">Name of table</param>
+        /// <param name="data">Data to be added</param>
+        /// <returns></returns>
+        public static string AddNewRow(string tableName, List<string> data)
+        {
+            try
+            {
+                return GeneralInsertNonQuery(tableName, data);
+            }
+            catch (Exception e) { return "Failed to add data, ERROR: " + e; }
+
+        }
+
         /// <summary>
         /// Edit data for the requested column for a given row
         /// </summary>
@@ -400,6 +413,15 @@ namespace BookItDependancies
         }
         #endregion
 
+        #region New data commands
+        public string CreateNewUser(string name, string address, string postcode, string email, string phone, string username, string password)
+        {
+            List<string> newData = new List<string>();
+            string response = ServerCommunication.AddNewRow("Users", newData);
+            //Check for error - TODO
+            return response;
+        }
+        #endregion
         #region Fetch Commands
 
         #endregion

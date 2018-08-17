@@ -19,19 +19,24 @@ namespace BookIt_Desktop
         {
             InitializeComponent();
             CreateErrorLabels();
+            CreateToolTips();
         }
 
         private void BtnSubmit_Click(object sender, EventArgs e)
         {
-            Validation.ValidateInput("Username", txtUsername.Text);
+            RunAllValidation(sender, e);
+            if (DataValidated()) {
+                //Update database for new user
+                
+            }
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
         {
             Dispose();
             Close();
-
         }
+
         #region Input validation
         private void CreateErrorLabels()
         {
@@ -57,6 +62,39 @@ namespace BookIt_Desktop
                 errorLabels.Add(la);
             }
         }
+
+        private void RunAllValidation(object sender, EventArgs e)
+        {
+            TxtUsername_TextChanged(sender, e);
+            TxtPassword_TextChanged(sender, e);
+            TxtREPassword_TextChanged(sender, e);
+            TxtName_TextChanged(sender, e);
+            TxtEmail_LostFocus(sender, e);
+            TxtAddress_LostFocus(sender, e);
+            TxtPostcode_LostFocus(sender, e);
+            TxtPhone_LostFocus(sender, e);
+
+        }
+
+        private bool DataValidated() {
+            foreach (Label l in errorLabels) {
+                if (l.Visible)
+                    return false; //If any error labels are showing then data must have failed validation
+            }
+            return true;
+        }
+
+        private void CreateToolTips()
+        {
+            new ToolTip().SetToolTip(lblUsername, "The name of your account");
+            new ToolTip().SetToolTip(lblPassword, "Try to avoid common passwords");
+            new ToolTip().SetToolTip(lblREPassword, "Must match your password");
+            new ToolTip().SetToolTip(lblName, "Your first and last name, use a hyphen or underscore for multi-barreled surnames");
+            new ToolTip().SetToolTip(lblEmail, "Your email address");
+            new ToolTip().SetToolTip(lblAddress, "House number and street only");
+            new ToolTip().SetToolTip(lblPostcode, "Your postcode");
+            new ToolTip().SetToolTip(lblPhone, "Your UK phone number");
+        }
         private void ValidateEntry()
         {
             //Username            
@@ -72,8 +110,7 @@ namespace BookIt_Desktop
         {
             string validate = Validation.ValidateInput("Username", txtUsername.Text);
             if (validate != "") errorLabels[0].Text = "*" + validate;
-            else errorLabels[0].Text = "";
-            
+            else errorLabels[0].Text = "";            
         }
 
         private void TxtPassword_TextChanged(object sender, EventArgs e)
@@ -91,7 +128,6 @@ namespace BookIt_Desktop
             else validate = "";
             if (validate != "") errorLabels[2].Text = "*" + validate;
             else errorLabels[2].Text = "";
-
         }
 
         private void TxtName_TextChanged(object sender, EventArgs e)
@@ -101,31 +137,33 @@ namespace BookIt_Desktop
             else errorLabels[3].Text = "";
         }
 
-        private void TxtEmail_TextChanged(object sender, EventArgs e)
+        private void TxtEmail_LostFocus(object sender, EventArgs e)
         {
             string validate = Validation.ValidateInput("Email", txtEmail.Text);
             if (validate != "") errorLabels[4].Text = "*" + validate;
             else errorLabels[4].Text = "";
         }
 
-        private void TxtAddress_TextChanged(object sender, EventArgs e)
+        private void TxtAddress_LostFocus(object sender, EventArgs e)
         {
-            string validate = Validation.ValidateInput("Address", txtAddress.Text);
-            if (validate != "") errorLabels[5].Text = "*" + validate;
+            string validate = Validation.ValidateInput("Email", txtEmail.Text);
+            if (validate != "") errorLabels[4].Text = "*" + validate;
             else errorLabels[5].Text = "";
         }
 
-        private void TxtPostcode_TextChanged(object sender, EventArgs e)
+        private void TxtPostcode_LostFocus(object sender, EventArgs e)
         {
-            string validate = Validation.ValidateInput("Postcode", txtPostcode.Text);
-            if (validate != "") errorLabels[6].Text = "*" + validate;
+            string validate = Validation.ValidateInput("Postcode", txtEmail.Text);
+            if (validate != "") errorLabels[4].Text = "*" + validate;
             else errorLabels[6].Text = "";
         }
 
-        private void TxtPhone_TextChanged(object sender, EventArgs e)
+        private void TxtPhone_LostFocus(object sender, EventArgs e)
         {
-            string validate = Validation.ValidateInput("Phone", txtPhone.Text);
-            if (validate != "") errorLabels[7].Text = "*" + validate;
+            string phone = txtEmail.Text;
+            if (phone[0] == '0') phone = phone.Substring(1,phone.Length - 1);
+            string validate = Validation.ValidateInput("Phone", "+44" + phone);
+            if (validate != "") errorLabels[4].Text = "*" + validate;
             else errorLabels[7].Text = "";
         }
 
@@ -146,5 +184,7 @@ namespace BookIt_Desktop
         }
 
         #endregion
+
+        
     }
 }
