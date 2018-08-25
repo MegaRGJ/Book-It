@@ -102,7 +102,7 @@ namespace BookItDependancies
         private static string GeneralUpdateNonQuery(string tableName, string identifyingID, List<string> columnsChange, List<string> newData)
         {
             string setString = "";
-            if (columnsChange.Count() != newData.Count()) return "Failed to remove data, update data mismatch";
+            if (columnsChange.Count() != newData.Count()) return "##Failed to remove data, update data mismatch";
             for (int n = 0; n < columnsChange.Count(); n++)
             {
                 setString += columnsChange[n] + " = '" + newData[n] + "'";
@@ -117,14 +117,14 @@ namespace BookItDependancies
                 cmd.ExecuteNonQuery();
                 return "Row " + identifyingID + " in " + tableName + " has been deleted successfully.";
             }
-            catch { return "Failed to remove data"; }
+            catch { return "##Failed to remove data"; }
         }
 
         private static string GeneralInsertNonQuery(string tableName, List<string> data)
         {
             List<string> columns = Validation.GetColumns(tableName);
             string columnString = ListToColumnBracket(columns);
-            string dataString = ListToColumnBracket(data, false, true);
+            string dataString = ListToColumnBracket(data, true, false);
             string strCommand = "INSERT INTO " + tableName + columnString + " VALUES " + dataString + ";";
             SqlCommand cmd = new SqlCommand(strCommand, connection);
 
@@ -210,7 +210,7 @@ namespace BookItDependancies
             {
                 return GeneralInsertNonQuery(tableName, data);
             }
-            catch (Exception e) { return "Failed to add data, ERROR: " + e; }
+            catch (Exception e) { return "##Failed to add data, ERROR: " + e; }
 
         }
 
@@ -253,9 +253,10 @@ namespace BookItDependancies
         /// Returns a string of columns formatted within brackets
         /// </summary>
         /// <param name="columns"></param>
-        /// <param name="ignorePrimary"></param>
-        /// <returns></returns>
-        private static string ListToColumnBracket(List<string> columns, bool ignorePrimary = true, bool includeApos = false)
+        /// <param name="ignorePrimary">Ignore primary</param>
+        /// <param name="includeApos">Include apostrophe?</param>
+        /// <returns></returns>       
+        private static string ListToColumnBracket(List<string> columns, bool includeApos = false, bool ignorePrimary = false)
         {
             string str = "(";
             int p = 0;
@@ -414,11 +415,16 @@ namespace BookItDependancies
         #endregion
 
         #region New data commands
-        public string CreateNewUser(string name, string address, string postcode, string email, string phone, string username, string password)
+        public static string CreateNewUser(string name, string address, string postcode, string email, string phone, string username, string password)
         {
-            List<string> newData = new List<string>();
-            string response = ServerCommunication.AddNewRow("Users", newData);
-            //Check for error - TODO
+            string salt = SecurityManager.GenerateNewSALT();
+            string encPass = SecurityManager.OneWayEncryptor(password, salt);
+
+            List<string> columns = Validation.GetColumns("Users");
+            List<string> newData = new List<string>() { name, address, postcode, email, phone, username, password,
+                DateTime.Now.ToShortTimeString(), salt, SecurityManager.GetPermissionString(0), "", ""};
+
+            string response = ServerCommunication.AddNewRow("Users", DataEncryptor(columns, newData));
             return response;
         }
         #endregion
@@ -469,7 +475,16 @@ namespace BookItDependancies
         }
         #endregion
         #region Useful functions
-
+        private static List<string> DataEncryptor(List<string> columns, List<string> data)
+        {
+            List<string> encData = new List<string>();
+            if (columns.Count != data.Count) return null;
+            for (int n = 0; n < data.Count(); n++)
+            {
+                encData.Add(SecurityManager.EncryptDatabaseData(columns[n], data[n]));
+            }
+            return encData;
+        }
         #endregion
     }
 

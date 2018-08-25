@@ -25,10 +25,17 @@ namespace BookIt_Desktop
         private void BtnSubmit_Click(object sender, EventArgs e)
         {
             RunAllValidation(sender, e);
-            if (DataValidated()) {
+            if (DataValidated())
+            {
                 //Update database for new user
-                
-            }
+                string response = Server.CreateNewUser(txtName.Text, txtAddress.Text, txtPostcode.Text, txtEmail.Text, txtPhone.Text, txtUsername.Text, txtPassword.Text);
+                if (response[0] == '#' && response[1] == '#') Program.DisplayMessage(response.Substring(2, response.Length - 2), "Error creating account");
+                else
+                {
+                    Program.DisplayMessage(response, "Account created");
+                    this.Close();
+                }
+            }            
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
@@ -53,10 +60,10 @@ namespace BookIt_Desktop
                     ForeColor = Color.Red,
                     //Visible = false,
                     Location = new Point(370, 50 + (40 * n)),
-                    MaximumSize = new Size(this.Size.Width - 370 - 10,0),
+                    MaximumSize = new Size(this.Size.Width - 370 - 10, 0),
                     AutoSize = true,
                     Visible = false
-                };                
+                };
                 la.TextChanged += new EventHandler(ErrorLabelUpdated);
                 Controls.Add(la);
                 errorLabels.Add(la);
@@ -65,6 +72,7 @@ namespace BookIt_Desktop
 
         private void RunAllValidation(object sender, EventArgs e)
         {
+            //Run all validation routines
             TxtUsername_TextChanged(sender, e);
             TxtPassword_TextChanged(sender, e);
             TxtREPassword_TextChanged(sender, e);
@@ -76,8 +84,10 @@ namespace BookIt_Desktop
 
         }
 
-        private bool DataValidated() {
-            foreach (Label l in errorLabels) {
+        private bool DataValidated()
+        {
+            foreach (Label l in errorLabels)
+            {
                 if (l.Visible)
                     return false; //If any error labels are showing then data must have failed validation
             }
@@ -95,22 +105,12 @@ namespace BookIt_Desktop
             new ToolTip().SetToolTip(lblPostcode, "Your postcode");
             new ToolTip().SetToolTip(lblPhone, "Your UK phone number");
         }
-        private void ValidateEntry()
-        {
-            //Username            
-            //Password (both)            
-            //Name
-            //Email
-            //Address (not required)
-            //Postcode
-            //Phone
-        }
 
         private void TxtUsername_TextChanged(object sender, EventArgs e)
         {
             string validate = Validation.ValidateInput("Username", txtUsername.Text);
             if (validate != "") errorLabels[0].Text = "*" + validate;
-            else errorLabels[0].Text = "";            
+            else errorLabels[0].Text = "";
         }
 
         private void TxtPassword_TextChanged(object sender, EventArgs e)
@@ -124,7 +124,7 @@ namespace BookIt_Desktop
         {
             string validate = "";
             if (txtPassword.Text != txtREPassword.Text)
-                validate = "*Passwords must match!";
+                validate = "Passwords must match!";
             else validate = "";
             if (validate != "") errorLabels[2].Text = "*" + validate;
             else errorLabels[2].Text = "";
@@ -146,24 +146,29 @@ namespace BookIt_Desktop
 
         private void TxtAddress_LostFocus(object sender, EventArgs e)
         {
-            string validate = Validation.ValidateInput("Email", txtEmail.Text);
-            if (validate != "") errorLabels[4].Text = "*" + validate;
-            else errorLabels[5].Text = "";
+            if (txtAddress.Text != "")
+            {
+                string validate = Validation.ValidateInput("Address", txtAddress.Text);
+                if (validate != "") errorLabels[5].Text = "*" + validate;
+                else errorLabels[5].Text = "";
+            }
         }
 
         private void TxtPostcode_LostFocus(object sender, EventArgs e)
         {
-            string validate = Validation.ValidateInput("Postcode", txtEmail.Text);
-            if (validate != "") errorLabels[4].Text = "*" + validate;
+            string validate = Validation.ValidateInput("Postcode", txtPostcode.Text);
+            if (validate != "") errorLabels[6].Text = "*" + validate;
             else errorLabels[6].Text = "";
         }
 
         private void TxtPhone_LostFocus(object sender, EventArgs e)
         {
-            string phone = txtEmail.Text;
-            if (phone[0] == '0') phone = phone.Substring(1,phone.Length - 1);
+            string phone = txtPhone.Text;
+            if (phone != "")
+                if (phone[0] == '0' && phone.Length == 11) phone = phone.Substring(1, phone.Length - 1);
+
             string validate = Validation.ValidateInput("Phone", "+44" + phone);
-            if (validate != "") errorLabels[4].Text = "*" + validate;
+            if (validate != "") errorLabels[7].Text = "*" + validate;
             else errorLabels[7].Text = "";
         }
 
@@ -185,6 +190,6 @@ namespace BookIt_Desktop
 
         #endregion
 
-        
+
     }
 }
