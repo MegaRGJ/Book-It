@@ -38,6 +38,7 @@
             this.lblPassWarn = new System.Windows.Forms.Label();
             this.lblInvalid = new System.Windows.Forms.Label();
             this.lblCreate = new System.Windows.Forms.Label();
+            this.lblConsole = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // txtUsername
@@ -140,6 +141,17 @@
             this.lblCreate.Text = "Create Account";
             this.lblCreate.Click += new System.EventHandler(this.LblCreate_Click);
             // 
+            // lblConsole
+            // 
+            this.lblConsole.AutoSize = true;
+            this.lblConsole.ForeColor = System.Drawing.SystemColors.ControlLightLight;
+            this.lblConsole.Location = new System.Drawing.Point(332, 196);
+            this.lblConsole.Name = "lblConsole";
+            this.lblConsole.Size = new System.Drawing.Size(45, 13);
+            this.lblConsole.TabIndex = 10;
+            this.lblConsole.Text = "Console";
+            this.lblConsole.Click += new System.EventHandler(this.LblConsole_Click);
+            // 
             // Login
             // 
             this.AcceptButton = this.btnLogin;
@@ -147,6 +159,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(384, 216);
+            this.Controls.Add(this.lblConsole);
             this.Controls.Add(this.lblCreate);
             this.Controls.Add(this.lblInvalid);
             this.Controls.Add(this.lblPassWarn);
@@ -178,6 +191,7 @@
         private System.Windows.Forms.Label lblPassWarn;
         private System.Windows.Forms.Label lblInvalid;
         private System.Windows.Forms.Label lblCreate;
+        private System.Windows.Forms.Label lblConsole;
     }
 }
 

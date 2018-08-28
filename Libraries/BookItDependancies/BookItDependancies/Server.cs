@@ -193,7 +193,8 @@ namespace BookItDependancies
         /// <returns></returns>
         public static int GetIDFromQuery(string tableName, string queryColumn, string queryString)
         {
-            return Convert.ToInt32(GeneralFetchQuery(tableName, GetPrimaryKey(tableName), queryColumn, queryString)[0]);
+            string id = GeneralFetchQuery(tableName, GetPrimaryKey(tableName), queryColumn, queryString)[0][0];
+            return Convert.ToInt32(id);
         }
         #endregion
 
@@ -424,7 +425,9 @@ namespace BookItDependancies
             List<string> newData = new List<string>() { name, address, postcode, email, phone, username, password,
                 DateTime.Now.ToShortTimeString(), salt, SecurityManager.GetPermissionString(0), "", ""};
 
-            string response = ServerCommunication.AddNewRow("Users", DataEncryptor(columns, newData));
+            List<string> encryptedData = DataEncryptor(columns, newData);
+
+            string response = ServerCommunication.AddNewRow("Users", encryptedData);
             return response;
         }
         #endregion

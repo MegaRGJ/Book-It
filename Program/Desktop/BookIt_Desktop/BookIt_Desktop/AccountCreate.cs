@@ -188,8 +188,7 @@ namespace BookIt_Desktop
 
         }
 
+
         #endregion
-
-
     }
 }

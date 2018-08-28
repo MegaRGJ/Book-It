@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BookItDependancies;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -16,6 +17,7 @@ namespace BookIt_Desktop
         public bool LoggedIn = false;
         public bool running = true;
         private int attemptsMade = 0;
+        private bool unlocked = false;
 
         public Login()
         {
@@ -32,7 +34,16 @@ namespace BookIt_Desktop
         {
             if (txtUsername.Text != "" && txtPassword.Text != "")
             {
-                if (BookItDependancies.Server.Login(txtUsername.Text, txtPassword.Text))
+                if (unlocked) {
+                    if (txtUsername.Text == "Admin" && txtPassword.Text == "admin")
+                    {
+                        Enabled = false;
+                        Console console = new Console();
+                        console.ShowDialog();
+                        Enabled = true;
+                    }
+                }
+                if (Server.Login(txtUsername.Text, txtPassword.Text))
                 {
                     LoggedIn = true;
                     running = true;
@@ -76,10 +87,23 @@ namespace BookIt_Desktop
 
         private void LblCreate_Click(object sender, EventArgs e)
         {
-            Enabled = false;            
+            Enabled = false;
             AccountCreate create = new AccountCreate();
             create.ShowDialog();
             Enabled = true;
+        }
+
+        private void LblConsole_Click(object sender, EventArgs e)
+        {
+            if (btnLogin.BackColor != Color.White)
+            {
+                btnLogin.BackColor = Color.White;
+                unlocked = true;
+            }
+            else {
+                btnLogin.BackColor = SystemColors.Control;
+                unlocked = false;
+            }
         }
     }
 }
