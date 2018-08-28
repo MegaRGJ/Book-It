@@ -139,6 +139,7 @@ namespace BookIt_Desktop
 
         private void TxtEmail_LostFocus(object sender, EventArgs e)
         {
+            txtEmail.Text = txtEmail.Text.ToLower();
             string validate = Validation.ValidateInput("Email", txtEmail.Text);
             if (validate != "") errorLabels[4].Text = "*" + validate;
             else errorLabels[4].Text = "";

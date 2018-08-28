@@ -93,7 +93,7 @@
             this.txtEmail.MaxLength = 150;
             this.txtEmail.Name = "txtEmail";
             this.txtEmail.Size = new System.Drawing.Size(212, 20);
-            this.txtEmail.TabIndex = 5;
+            this.txtEmail.TabIndex = 6;
             this.txtEmail.Leave += new System.EventHandler(this.TxtEmail_LostFocus);
             // 
             // txtName
@@ -102,7 +102,7 @@
             this.txtName.MaxLength = 50;
             this.txtName.Name = "txtName";
             this.txtName.Size = new System.Drawing.Size(212, 20);
-            this.txtName.TabIndex = 4;
+            this.txtName.TabIndex = 5;
             this.txtName.TextChanged += new System.EventHandler(this.TxtName_TextChanged);
             // 
             // txtPhone
@@ -111,7 +111,7 @@
             this.txtPhone.MaxLength = 20;
             this.txtPhone.Name = "txtPhone";
             this.txtPhone.Size = new System.Drawing.Size(189, 20);
-            this.txtPhone.TabIndex = 8;
+            this.txtPhone.TabIndex = 9;
             this.txtPhone.Leave += new System.EventHandler(this.TxtPhone_LostFocus);
             // 
             // txtPostcode
@@ -120,7 +120,7 @@
             this.txtPostcode.MaxLength = 20;
             this.txtPostcode.Name = "txtPostcode";
             this.txtPostcode.Size = new System.Drawing.Size(212, 20);
-            this.txtPostcode.TabIndex = 7;
+            this.txtPostcode.TabIndex = 8;
             this.txtPostcode.Leave += new System.EventHandler(this.TxtPostcode_LostFocus);
             // 
             // txtAddress
@@ -129,7 +129,7 @@
             this.txtAddress.MaxLength = 200;
             this.txtAddress.Name = "txtAddress";
             this.txtAddress.Size = new System.Drawing.Size(212, 20);
-            this.txtAddress.TabIndex = 6;
+            this.txtAddress.TabIndex = 7;
             this.txtAddress.Leave += new System.EventHandler(this.TxtAddress_LostFocus);
             // 
             // lblName
@@ -211,7 +211,7 @@
             this.txtREPassword.Name = "txtREPassword";
             this.txtREPassword.ShortcutsEnabled = false;
             this.txtREPassword.Size = new System.Drawing.Size(212, 20);
-            this.txtREPassword.TabIndex = 16;
+            this.txtREPassword.TabIndex = 4;
             this.txtREPassword.UseSystemPasswordChar = true;
             this.txtREPassword.TextChanged += new System.EventHandler(this.TxtREPassword_TextChanged);
             // 
@@ -220,7 +220,7 @@
             this.btnSubmit.Location = new System.Drawing.Point(393, 377);
             this.btnSubmit.Name = "btnSubmit";
             this.btnSubmit.Size = new System.Drawing.Size(75, 23);
-            this.btnSubmit.TabIndex = 18;
+            this.btnSubmit.TabIndex = 10;
             this.btnSubmit.Text = "Submit";
             this.btnSubmit.UseVisualStyleBackColor = true;
             this.btnSubmit.Click += new System.EventHandler(this.BtnSubmit_Click);
@@ -230,7 +230,7 @@
             this.btnCancel.Location = new System.Drawing.Point(48, 377);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 19;
+            this.btnCancel.TabIndex = 11;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.BtnCancel_Click);

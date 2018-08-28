@@ -335,6 +335,7 @@ namespace BookItDependancies
         /// <returns></returns>
         public static bool Login(string username, string password, bool stayLoggedIn = false)
         {
+            
             int userID = GetUserID(username);
             if (userID == -1) return false;
             //ID has been found, now check if password matches
@@ -422,7 +423,7 @@ namespace BookItDependancies
             string encPass = SecurityManager.OneWayEncryptor(password, salt);
 
             List<string> columns = Validation.GetColumns("Users");
-            List<string> newData = new List<string>() { name, address, postcode, email, phone, username, password,
+            List<string> newData = new List<string>() { name, address, postcode, email, phone, username, encPass,
                 DateTime.Now.ToShortTimeString(), salt, SecurityManager.GetPermissionString(0), "", ""};
 
             List<string> encryptedData = DataEncryptor(columns, newData);
