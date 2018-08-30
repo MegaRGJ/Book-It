@@ -13,10 +13,9 @@ namespace BookIt_Desktop
 
         public static SplashScreen splashScreen = null;
         public static Login loginScreen = null;
+        public static Main mainScreen;
         public static bool connected = false;
         public static bool loggedIn = false;
-
-        
 
         /// <summary>
         /// The main entry point for the application.
@@ -41,9 +40,7 @@ namespace BookIt_Desktop
                 if (loginScreen.LoggedIn) //Stop program if user failed to log in
                 {
                     loggedIn = true;
-                    Main main = new Main();
-                    main.Show();
-                    main.Activate();//Run main program if user has logged in
+                    RunMainRoutine();
                 }
                 else Application.Exit(); //No idea why this is needed, somehow makes it work
             }
@@ -55,6 +52,19 @@ namespace BookIt_Desktop
             form.Invoke(new Action(form.Close));
             form.Dispose();
             form = null;
+        }
+
+        public static void RunMainRoutine()
+        {
+            Thread mainThread = new Thread(new ThreadStart(
+                delegate
+                {
+                    mainScreen = new Main();
+
+                    Application.Run(mainScreen);
+                }));
+            mainThread.SetApartmentState(ApartmentState.STA);
+            mainThread.Start();
         }
 
         public static void RunLoginRoutine()

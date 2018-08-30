@@ -168,7 +168,11 @@ namespace BookItDependancies
         /// <returns></returns>
         public static List<string> GetRowFromQuery(string tableName, string queryColumn, string queryString, List<string> columnsRequested)
         {
-            return GeneralFetchQuery(tableName, columnsRequested, queryColumn, queryString)[0];
+            try
+            {
+                return GeneralFetchQuery(tableName, columnsRequested, queryColumn, queryString)[0];
+            }
+            catch { return null; }
         }
 
         /// <summary>
@@ -335,18 +339,19 @@ namespace BookItDependancies
         /// <returns></returns>
         public static bool Login(string username, string password, bool stayLoggedIn = false)
         {
-            
+
             int userID = GetUserID(username);
             if (userID == -1) return false;
             //ID has been found, now check if password matches
-            List<string> userData = ServerCommunication.GetRowFromID("Users", userID, new List<string>() { "Password", "Salt", "Permission" });
-            string pass = userData[0];
-            string salt = SecurityManager.DecryptDatabaseData("Salt", userData[1]);
+            List<string> userData = ServerCommunication.GetRowFromID("Users", userID, new List<string>() { "Name", "Password", "Salt", "Permission" });
+            string pass = userData[1];
+            string salt = SecurityManager.DecryptDatabaseData("Salt", userData[2]);
             if (SecurityManager.ValidatePassword(password, pass, salt))
             {
                 LoggedIn = true;
                 //Set client information
-                SetClientData(userID, Convert.ToInt32(userData[2]));
+                int permLevel = SecurityManager.GetPermissionLevel(SecurityManager.DecryptDatabaseData("Permission", userData[3]));
+                SetClientData(userID, username, userData[0], permLevel);
             }
             else return false;
 
@@ -366,31 +371,31 @@ namespace BookItDependancies
         {
             int userID = GetUserID(username);
             if (userID == -1) return false;
-            List<string> userData = ServerCommunication.GetRowFromID("Users", userID, new List<string>() { "Salt", "Permission", "CryptoToken" });
+            List<string> userData = ServerCommunication.GetRowFromID("Users", userID, new List<string>() { "Name", "Salt", "Permission", "CryptoToken" });
             string providedToken = SecurityManager.DecryptDatabaseData("CryptoToken", cryptographicToken);
-            string encProvidedToken = SecurityManager.OneWayEncryptor(providedToken, userData[0]);
-            if (encProvidedToken == userData[2])
+            string encProvidedToken = SecurityManager.OneWayEncryptor(providedToken, userData[1]);
+            if (encProvidedToken == userData[3])
             {
                 LoggedIn = true;
                 //Set client information
-                SetClientData(userID, Convert.ToInt32(userData[1]));
+                SetClientData(userID, username, userData[0], Convert.ToInt32(userData[1]));
                 return true;
             }
             else return false;
         }
 
-        private static void SetClientData(int userID, int permissionLevel)
+        private static void SetClientData(int userID, string username, string name, int permissionLevel)
         {
-            List<string> requestedInformation = new List<string>() { "EmpoyeeID", "BusinessID", "PermissionLevel" };
+            List<string> requestedInformation = new List<string>() { "EmployeeID", "BusinessID", "PermissionLevel" };
             List<string> employeeInformation = ServerCommunication.GetRowFromQuery("Employees", "UserID", userID.ToString(), requestedInformation);
             if (employeeInformation != null)
             {
                 int emplID = Convert.ToInt32(employeeInformation[0]);
                 int busID = Convert.ToInt32(employeeInformation[1]);
                 int busPerm = Convert.ToInt32(employeeInformation[2]);
-                client = new Client(permissionLevel, userID, busID, emplID, busPerm);
+                client = new Client(permissionLevel, userID, username, name, busID, emplID, busPerm);
             }
-            else { client = new Client(permissionLevel, userID); }
+            else { client = new Client(permissionLevel, userID, username, name); }
         }
 
         private static int GetUserID(string username)
@@ -490,6 +495,12 @@ namespace BookItDependancies
             return encData;
         }
         #endregion
+        #region Call functions
+        /// <summary> Get logged in client's name</summary>
+        public static string ClientName { get => client.Name; }
+        /// <summary> Get logged in client's username</summary>
+        public static string ClientUsername { get => client.Username; }
+        #endregion
     }
 
     public class Client
@@ -501,6 +512,9 @@ namespace BookItDependancies
         protected int clientEmployeeID = 0;
         protected int clientEmployeePermissionLvl = 0;
 
+        protected string clientUsername;
+        protected string clientName;
+
         protected string cryptoToken = "";
 
         /// <summary>
@@ -511,13 +525,15 @@ namespace BookItDependancies
         /// <param name="businessID"></param>
         /// <param name="employeeID"></param>
         /// <param name="businessPermissionLevel"></param>
-        public Client(int permissionLevel, int id, int businessID = 0, int employeeID = 0, int businessPermissionLevel = 0)
+        public Client(int permissionLevel, int id, string username, string name, int businessID = 0, int employeeID = 0, int businessPermissionLevel = 0)
         {
             clientPermissionLevel = permissionLevel;
             clientUserID = id;
             clientBusinessID = businessID;
             clientEmployeeID = employeeID;
             clientEmployeePermissionLvl = businessPermissionLevel;
+            clientUsername = username;
+            clientName = name;
         }
 
         /// <summary>Returns the permission level of the client</summary>
@@ -532,6 +548,10 @@ namespace BookItDependancies
         public int BusinessPermission { get => clientEmployeePermissionLvl; }
         /// <summary> Get/Set client cryptographic login token (should be encrypted)</summary>
         public string CryptographicToken { get => cryptoToken; set => cryptoToken = value; }
+        /// <summary> Get client username</summary>
+        public string Username { get => clientUsername; }
+        /// <summary> Get client name</summary>
+        public string Name { get => clientName; }
         /// <summary>Returns whether the user is connected to a business account</summary>
         public bool IsBusinessUser()
         {

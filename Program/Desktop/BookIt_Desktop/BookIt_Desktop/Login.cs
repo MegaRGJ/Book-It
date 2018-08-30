@@ -46,7 +46,8 @@ namespace BookIt_Desktop
                 if (Server.Login(txtUsername.Text, txtPassword.Text))
                 {
                     LoggedIn = true;
-                    running = true;
+                    running = false;
+                    //Close();
                 }
                 else
                 {
