@@ -1,4 +1,4 @@
 # Book-It
 Booking Application (In development)
 
-More information later.
+Old project, yeah, not gonna do anything else on this mess.
